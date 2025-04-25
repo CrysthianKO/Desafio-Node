@@ -1,0 +1,28 @@
+{
+  "name": "desafio-node",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CrysthianKO/Desafio-Node.git"
+  },
+  "author": "CrysthianOq",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/CrysthianKO/Desafio-Node/issues"
+  },
+  "homepage": "https://github.com/CrysthianKO/Desafio-Node#readme",
+  "dependencies": {
+    "puppeteer": "^24.7.2"
+  },
+  "devDependencies": {
+    "dotenv": "^16.5.0",
+    "nodemon": "^3.1.10",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  }
+}
