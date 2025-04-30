@@ -1,45 +1,49 @@
-import puppeteer from "puppeteer";
+import {
+  aceitarCookies,
+  abrirBusca,
+  preencherCPF,
+  clicarBotaoConsultar,
+  verificarLinkRef,
+  coletarDados,
+} from "./interacoes";
+import { startBrowser, openPage, gotoPage } from "./navegar";
+import { env } from "./utils/env";
+import { saveJson } from "./utils/saveJson";
 
 (async () => {
-    const browser = await puppeteer.launch({
-        headless: false,
-        args: [
-            '--start-maximized',
-            '--disable-features=SameSiteByDefaultCookies,CookiesWithoutSameSiteMustBeSecure',
-            '--disable-blink-features=AutomationControlled',
-            '--disable-web-security'
-        ],
-        defaultViewport: null,
-    });
-    const page = await browser.newPage();
-    
-    await page.goto("https://portaldatransparencia.gov.br/servidores/consulta?ordenarPor=nome&direcao=asc");
+  const browser = await startBrowser();
+  const page = await openPage(
+    browser,
+    "https://portaldatransparencia.gov.br/servidores/consulta?ordenarPor=nome&direcao=asc"
+  );
 
-    await page.click("#btn-cpf-1");
-    await page.waitForSelector("#cpf", { visible: true });
+  const listaCPF: string[] = [];
+  listaCPF.push(...env.LISTA_CPF);
+  console.log("Lista de CPFs:", listaCPF);
 
-    await page.evaluate(() => {
-        const input = document.querySelector("#cpf") as HTMLInputElement;
-        if (input) {
-            input.value = "41467272000"; // Substitua pelo CPF desejado
-            input.dispatchEvent(new Event("input", { bubbles: true }));
-            input.dispatchEvent(new Event("change", { bubbles: true }));
-        }
-    });
-    console.log("CPF preenchido com sucesso!");
+  await aceitarCookies(page);
 
-    await page.click('#id-box-filtro > div > div > ul > li:nth-child(2) > div > div > div > div.gaveta__corpo > button');
-    await page.waitForSelector('.btn-consultar.br-button.primary.btn-filtros-aplicados-consultar', { visible: true });
-    await page.locator('.btn-consultar.br-button.primary.btn-filtros-aplicados-consultar').click();
+  let linksServidores: string[] = [];
 
-    const href = await page.evaluate(() => {
-        const element = document.querySelector('#lista > tbody > tr > td:nth-child(1) > span > div > a');
-        return element ? element.getAttribute('href') : null;
-    });
+  for (const cpf of listaCPF) {
+    await abrirBusca(page);
+    await preencherCPF(page, cpf);
+    await clicarBotaoConsultar(page);
+    const href = await verificarLinkRef(page);
+    linksServidores.push(href);
+  }
 
-    page.goto('https://portaldatransparencia.gov.br' + href);
-    console.log("href: ", href);  
-    // const botao = ; #lista > tbody > tr > td:nth-child(1) > span > div > a
-    // console.log("Botão Consultar : ", botaoConsult != null);
-    // botaoConsult.click();
+  const dadosServidores: any[] = [];
+
+  for (const link of linksServidores) {
+    if (link === "") {
+      console.log("CPF não encontrado.");
+    } else {
+      console.log("CPF encontrado:", link);
+      await gotoPage(page, link);
+      const dadosServidor = await coletarDados(page);
+      dadosServidores.push(dadosServidor);
+    }
+  }
+  saveJson(dadosServidores, "dadosServidores.json", "./tmp/")
 })();
